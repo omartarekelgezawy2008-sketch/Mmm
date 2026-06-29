@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة الأدمن - الرفع الصاروخي</title>
+    <title>لوحة الأدمن - الرفع الرسمي المستقر</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #eef2f3; margin: 0; padding: 10px; color: #333; direction: rtl; }
-        .container { max-width: 100%; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); box-sizing: border-box; margin: 10px auto; max-width: 600px; border-top: 5px solid #007bff; }
+        .container { max-width: 100%; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 8px 16 rgba(0,0,0,0.1); box-sizing: border-box; margin: 10px auto; max-width: 600px; border-top: 5px solid #007bff; }
         h1, h3 { text-align: center; color: #333; font-size: 20px; margin: 10px 0; }
         .card { background: #fff; padding: 15px; border: 1px solid #dee2e6; border-radius: 8px; margin-bottom: 15px; box-sizing: border-box; }
         input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
@@ -50,7 +51,7 @@
             <option value="جروب الأكل">جروب الأكل 🍏 (جدول نصي)</option>
             <option value="جروب تمارين الجيم">جروب تمارين الجيم 💪 (جدول نصي)</option>
             <option value="جروب تمارين البيت">جروب تمارين البيت 🏠 (جدول نصي)</option>
-            <option value="جروب ميديا وتوضيح">جروب ميديا وتوضيح 🎬 (فيديو من الاستوديو مباشر)</option>
+            <option value="جروب ميديا وتوضيح">جروب ميديا وتوضيح 🎬 (فيديو من الاستوديو رسمي)</option>
         </select>
         
         <input type="text" id="btnTitle" placeholder="اسم الزرار (مثال: تجميع بنش)">
@@ -60,7 +61,7 @@
             <label style="font-weight: bold; display: block; margin-bottom: 8px;">اختر الفيديو من الموبايل:</label>
             <input type="file" id="mediaFile" accept="video/*,image/*" style="padding:5px;">
             <div class="progress-bar" id="progBar"><div class="progress-fill" id="progFill"></div></div>
-            <div id="uploadStatusText" class="upload-msg">⏳ جاري رفع ملف الفيديو إلى السيرفر...</div>
+            <div id="uploadStatusText" class="upload-msg">⏳ جاري رفع الفيديو على سيرفرك الرسمي...</div>
         </div>
 
         <button onclick="addMessage()">حفظ ونشر بموقع الكابتن فوراً 🚀</button>
@@ -78,9 +79,18 @@
     }
 
     let database;
+    let storage;
+
     function initFirebase() {
-        firebase.initializeApp({ databaseURL: "https://eeyru-878e7-default-rtdb.firebaseio.com/" });
+        // الربط بالداتابيز الرسمية ومساحة التخزين الخاصة بك لضمان الإرسال للكابتن
+        const config = {
+            databaseURL: "https://eeyru-878e7-default-rtdb.firebaseio.com/",
+            storageBucket: "eeyru-878e7.appspot.com" // تحديد باكيت التخزين تلقائياً لمشروعك
+        };
+        
+        firebase.initializeApp(config);
         database = firebase.database();
+        storage = firebase.storage();
 
         database.ref('clients').on('value', (snapshot) => {
             let html = '';
@@ -110,36 +120,6 @@
         }
     }
 
-    // سيرفر رفع خارجي صاروخي متوافق مع CORS ومفتوح تماماً للموبايل
-    async function uploadFileDirectly(file, onProgress) {
-        return new Promise((resolve, reject) => {
-            const formData = new FormData();
-            formData.append('file', file);
-
-            const xhr = new XMLHttpRequest();
-            // استخدام سيرفر tmpfiles المفتوح لرفع أي حجم بدون قيود أمان
-            xhr.open('POST', "https://tmpfiles.org/api/v1/upload", true);
-
-            xhr.upload.onprogress = (event) => {
-                if (event.lengthComputable) {
-                    const percent = (event.loaded / event.total) * 100;
-                    onProgress(percent);
-                }
-            };
-
-            xhr.onload = () => {
-                if (xhr.status === 200) {
-                    const res = JSON.parse(xhr.responseText);
-                    // تحويل الرابط لرابط مباشر صالح للمشاهدة فوراً
-                    let directUrl = res.data.url.replace("tmpfiles.org/", "tmpfiles.org/dl/");
-                    resolve(directUrl);
-                } else { reject('فشل الرفع'); }
-            };
-            xhr.onerror = () => reject('خطأ اتصال');
-            xhr.send(formData);
-        });
-    }
-
     async function addMessage() {
         const category = document.getElementById('msgCategory').value;
         const title = document.getElementById('btnTitle').value.trim();
@@ -153,19 +133,31 @@
             document.getElementById('progBar').style.display = "block";
             document.getElementById('uploadStatusText').style.display = "block";
 
-            try {
-                const videoUrl = await uploadFileDirectly(file, (percent) => {
+            // إنشاء مسار فريد للملف داخل الـ Firebase Storage الخاص بك لعدم تداخل الملفات
+            const storageRef = storage.ref('videos/' + Date.now() + '_' + file.name);
+            const uploadTask = storageRef.put(file);
+
+            uploadTask.on('state_changed', 
+                (snapshot) => {
+                    // حساب النسبة المئوية للرفع وعرضها بشريط التحميل
+                    const percent = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
                     document.getElementById('progFill').style.width = percent + '%';
-                });
-                
-                database.ref('messages').push({ category: category, title: title, content: videoUrl });
-                resetForm();
-                alert("تم رفع الفيديو بنجاح وظهر عند الكابتن كـ زرار! 🎉");
-            } catch (err) {
-                alert("فشل الرفع، تأكد من حجم الملف والشبكة وجرب تاني.");
-                document.getElementById('progBar').style.display = "none";
-                document.getElementById('uploadStatusText').style.display = "none";
-            }
+                }, 
+                (err) => {
+                    alert("فشل الرفع، تأكد من فتح الـ Rules بالـ Storage كما بالشرح.");
+                    document.getElementById('progBar').style.display = "none";
+                    document.getElementById('uploadStatusText').style.display = "none";
+                }, 
+                async () => {
+                    // عند اكتمال الرفع بنجاح استخراج اللينك الرسمي المباشر
+                    const videoUrl = await uploadTask.snapshot.ref.getDownloadURL();
+                    
+                    // حفظ الرابط النظيف فوراً بالداتابيز لتظهر للكابتن بدون أي مشاكل
+                    database.ref('messages').push({ category: category, title: title, content: videoUrl });
+                    resetForm();
+                    alert("تم الرفع على سيرفرك المضمون وظهر عند الكابتن كـ زرار! 🎉");
+                }
+            );
         } else {
             const content = document.getElementById('msgContent').value.trim();
             if(!content) { alert("اكتب تفاصيل الجدول أولاً!"); return; }
