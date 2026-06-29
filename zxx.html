@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة الأدمن المتطورة - رفع الوسائط الفوري</title>
+    <title>لوحة الأدمن - الرفع الصاروخي</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
@@ -16,11 +16,11 @@
         button:hover { background-color: #0056b3; }
         .list-item { background: #f8f9fa; padding: 10px; margin: 5px 0; border-right: 4px solid #007bff; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; border: 1px solid #dee2e6; border-right-width: 4px; }
         .delete-btn { background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; width: auto; cursor: pointer; }
-        .delete-btn:hover { background: #bd2130; }
         .login-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:#343a40; display:flex; justify-content:center; align-items:center; z-index:9999; padding: 15px; box-sizing: border-box; }
-        .login-box { background:white; padding:25px; border-radius:12px; width:100%; max-width:340px; text-align:center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        .upload-msg { color: #28a745; font-weight: bold; display: none; text-align: center; margin-top: 5px; font-size: 14px; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .login-box { background:white; padding:25px; border-radius:12px; width:100%; max-width:340px; text-align:center; }
+        .progress-bar { background: #e2e8f0; border-radius: 4px; height: 12px; margin: 10px 0; display: none; overflow: hidden; border: 1px solid #cbd5e1; }
+        .progress-fill { background: #28a745; height: 100%; width: 0%; transition: width 0.1s; }
+        .upload-msg { color: #007bff; font-weight: bold; display: none; text-align: center; margin-top: 5px; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -28,9 +28,8 @@
 <div class="login-overlay" id="loginScreen">
     <div class="login-box">
         <h2>لوحة الأدمن 👑</h2>
-        <p style="font-size: 13px; color: #666;">ادخل كلمة السر للتحكم في موقع الكابتن</p>
         <input type="password" id="adminPasswordInput" placeholder="كلمة السر">
-        <button onclick="checkAdminLogin()" style="background:#343a40; margin-top:10px;">دخول الغرفة 🔐</button>
+        <button onclick="checkAdminLogin()" style="background:#343a40; margin-top:10px;">دخول 🔐</button>
     </div>
 </div>
 
@@ -41,26 +40,27 @@
         <h3>👥 إضافة مشترك جديد</h3>
         <input type="text" id="clientName" placeholder="اسم المشترك">
         <input type="text" id="clientPhone" placeholder="رقم الهاتف">
-        <button onclick="addClient()" style="background-color: #28a745;">حفظ المشترك بالفوركس 💾</button>
+        <button onclick="addClient()" style="background-color: #28a745;">حفظ المشترك 💾</button>
         <div id="clientsList" style="margin-top:10px; max-height:150px; overflow-y:auto;"></div>
     </div>
 
     <div class="card">
-        <h3>🎬 إضافة الوجبات أو الوسائط والفيديوهات</h3>
+        <h3>🎬 إضافة الوجبات أو الفيديوهات</h3>
         <select id="msgCategory" onchange="toggleInputType()">
             <option value="جروب الأكل">جروب الأكل 🍏 (جدول نصي)</option>
             <option value="جروب تمارين الجيم">جروب تمارين الجيم 💪 (جدول نصي)</option>
             <option value="جروب تمارين البيت">جروب تمارين البيت 🏠 (جدول نصي)</option>
-            <option value="جروب ميديا وتوضيح">جروب ميديا وتوضيح 🎬 (فيديو/ملف مباشر من الاستوديو)</option>
+            <option value="جروب ميديا وتوضيح">جروب ميديا وتوضيح 🎬 (فيديو من الاستوديو مباشر)</option>
         </select>
         
-        <input type="text" id="btnTitle" placeholder="اسم الزرار (مثال: تجميع بنش بالدمبل)">
+        <input type="text" id="btnTitle" placeholder="اسم الزرار (مثال: تجميع بنش)">
         <textarea id="msgContent" rows="5" placeholder="اكتب تفاصيل الجدول هنا..."></textarea>
         
         <div id="mediaUploadBox" style="display: none; border: 2px dashed #007bff; padding: 20px; text-align: center; margin: 10px 0; border-radius: 8px; background: #f8f9fa;">
-            <label style="font-weight: bold; display: block; margin-bottom: 8px; color: #007bff;">اختر الفيديو أو الملف من الموبايل مباشرة:</label>
+            <label style="font-weight: bold; display: block; margin-bottom: 8px;">اختر الفيديو من الموبايل:</label>
             <input type="file" id="mediaFile" accept="video/*,image/*" style="padding:5px;">
-            <div id="uploadStatusText" class="upload-msg">⏳ جاري معالجة وتشفير الفيديو وحفظه بالداتابيز...</div>
+            <div class="progress-bar" id="progBar"><div class="progress-fill" id="progFill"></div></div>
+            <div id="uploadStatusText" class="upload-msg">⏳ جاري رفع ملف الفيديو إلى السيرفر...</div>
         </div>
 
         <button onclick="addMessage()">حفظ ونشر بموقع الكابتن فوراً 🚀</button>
@@ -69,7 +69,6 @@
 </div>
 
 <script>
-    // نظام تسجيل الدخول المحمي
     function checkAdminLogin() {
         if(document.getElementById('adminPasswordInput').value === "000") {
             document.getElementById('loginScreen').style.display = 'none';
@@ -80,11 +79,9 @@
 
     let database;
     function initFirebase() {
-        // تم ربط الداتابيز الجديدة المحددة من قبلك بنجاح هنا
         firebase.initializeApp({ databaseURL: "https://eeyru-878e7-default-rtdb.firebaseio.com/" });
         database = firebase.database();
 
-        // مزامنة قائمة المشتركين
         database.ref('clients').on('value', (snapshot) => {
             let html = '';
             snapshot.forEach((child) => {
@@ -93,7 +90,6 @@
             document.getElementById('clientsList').innerHTML = html || 'لا يوجد مشتركين حالياً';
         });
 
-        // مزامنة قائمة الأزرار والخانات المرفوعة
         database.ref('messages').on('value', (snapshot) => {
             let html = '';
             snapshot.forEach((child) => {
@@ -103,7 +99,6 @@
         });
     }
 
-    // التحويل التلقائي بين كتابة النص أو اختيار ملف فيديو من الاستوديو
     function toggleInputType() {
         const cat = document.getElementById('msgCategory').value;
         if(cat === "جروب ميديا وتوضيح") {
@@ -115,46 +110,65 @@
         }
     }
 
-    // الطريقة المبتكرة والآمنة: تحويل الفيديو إلى Base64 ليرفع مباشرة بدون قيود سيرفرات
-    function addMessage() {
+    // سيرفر رفع خارجي صاروخي متوافق مع CORS ومفتوح تماماً للموبايل
+    async function uploadFileDirectly(file, onProgress) {
+        return new Promise((resolve, reject) => {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const xhr = new XMLHttpRequest();
+            // استخدام سيرفر tmpfiles المفتوح لرفع أي حجم بدون قيود أمان
+            xhr.open('POST', "https://tmpfiles.org/api/v1/upload", true);
+
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable) {
+                    const percent = (event.loaded / event.total) * 100;
+                    onProgress(percent);
+                }
+            };
+
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    const res = JSON.parse(xhr.responseText);
+                    // تحويل الرابط لرابط مباشر صالح للمشاهدة فوراً
+                    let directUrl = res.data.url.replace("tmpfiles.org/", "tmpfiles.org/dl/");
+                    resolve(directUrl);
+                } else { reject('فشل الرفع'); }
+            };
+            xhr.onerror = () => reject('خطأ اتصال');
+            xhr.send(formData);
+        });
+    }
+
+    async function addMessage() {
         const category = document.getElementById('msgCategory').value;
         const title = document.getElementById('btnTitle').value.trim();
         
         if(!title) { alert("برجاء كتابة اسم الزرار أولاً!"); return; }
 
         if(category === "جروب ميديا وتوضيح") {
-            const fileInput = document.getElementById('mediaFile');
-            const file = fileInput.files[0];
-            if(!file) { alert("برجاء اختيار الفيديو أو الملف من استوديو الموبايل!"); return; }
+            const file = document.getElementById('mediaFile').files[0];
+            if(!file) { alert("برجاء اختيار الفيديو من الاستوديو!"); return; }
             
-            // تنبيه الحجم لحماية سرعة الداتابيز
-            if (file.size > 12 * 1024 * 1024) { 
-                return alert("الفيديو كبير جداً! الحد الأقصى للفيديوهات هو 12 ميجا لضمان سرعة التحميل.");
-            }
-
+            document.getElementById('progBar').style.display = "block";
             document.getElementById('uploadStatusText').style.display = "block";
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64MediaData = e.target.result; // الفيديو متشفر بالكامل وجاهز للـ Firebase
-                
-                database.ref('messages').push({
-                    category: category,
-                    title: title,
-                    content: base64MediaData // حفظ البيانات بالداتابيز مباشرة
-                }).then(() => {
-                    resetForm();
-                    alert("تم تشفير وحفظ الفيديو بنجاح وظهر كـ زرار أوتوماتيكي عند الكابتن! 🎉");
-                }).catch(() => {
-                    alert("حدث خطأ أثناء الحفظ بقاعدة البيانات.");
-                    document.getElementById('uploadStatusText').style.display = "none";
+            try {
+                const videoUrl = await uploadFileDirectly(file, (percent) => {
+                    document.getElementById('progFill').style.width = percent + '%';
                 });
-            };
-            reader.readAsDataURL(file);
+                
+                database.ref('messages').push({ category: category, title: title, content: videoUrl });
+                resetForm();
+                alert("تم رفع الفيديو بنجاح وظهر عند الكابتن كـ زرار! 🎉");
+            } catch (err) {
+                alert("فشل الرفع، تأكد من حجم الملف والشبكة وجرب تاني.");
+                document.getElementById('progBar').style.display = "none";
+                document.getElementById('uploadStatusText').style.display = "none";
+            }
         } else {
             const content = document.getElementById('msgContent').value.trim();
             if(!content) { alert("اكتب تفاصيل الجدول أولاً!"); return; }
-            
             database.ref('messages').push({ category: category, title: title, content: content });
             resetForm();
             alert("تم حفظ الجدول بنجاح ونشر بموقع الكابتن!");
@@ -165,6 +179,8 @@
         document.getElementById('btnTitle').value = '';
         document.getElementById('msgContent').value = '';
         document.getElementById('mediaFile').value = '';
+        document.getElementById('progBar').style.display = "none";
+        document.getElementById('progFill').style.width = '0%';
         document.getElementById('uploadStatusText').style.display = "none";
     }
 
@@ -178,7 +194,6 @@
             alert("تم حفظ المشترك الجديد!");
         }
     }
-    
     function deleteClient(id) { if(confirm("هل تريد حذف هذا المشترك؟")) database.ref('clients/' + id).remove(); }
     function deleteMessage(id) { if(confirm("هل تريد حذف هذه الخانة؟")) database.ref('messages/' + id).remove(); }
 </script>
