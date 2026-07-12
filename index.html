@@ -2,116 +2,138 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تواصل الكابتن - الداتابيز الجديدة</title>
+    <!-- إعدادات الشاشة لضمان عدم تغير الحجم (تثبيت العرض) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>عقارات المتميزة بالجيزة | أ. عمرو محمد</title>
+    <!-- استدعاء مكتبة الفايربيس -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 8px; color: #333; direction: rtl; }
-        .container { max-width: 100%; background: white; padding: 10px; border-radius: 8px; box-sizing: border-box; }
-        h1, h3 { text-align: center; color: #2c3e50; font-size: 18px; margin: 8px 0; }
-        .card { background: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 12px; }
-        textarea, input { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
-        .msg-btn { display: block; width: 100%; text-align: right; background: #f8f9fa; border: 1px solid #ccc; padding: 12px; margin: 6px 0; border-radius: 6px; font-size: 14px; font-weight: bold; color: #2c3e50; }
-        .msg-btn:active { background: #e8f8f5; border-color: #25D366; }
-        .client-box { padding: 12px; margin: 5px 0; background: #f1f5f9; border-right: 4px solid #3498db; border-radius: 4px; font-weight: bold; font-size: 15px; }
-        .client-box.active { background: #e0f2fe; border-right-color: #0284c7; }
-        .send-btn { width: 100%; background: #25D366; color: white; padding: 14px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; margin-top: 5px; }
+        :root {
+            --midnight: #020617; /* لون غامق جداً وفخم */
+            --deep-navy: #0f172a; /* لون الكارد */
+            --gold: #c5a059; /* ذهبي هادئ */
+            --white: #f8fafc;
+            --text-light: #e2e8f0;
+        }
+
+        body {
+            background-color: var(--midnight);
+            color: var(--text-light);
+            font-family: 'Cairo', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background: linear-gradient(180deg, #0f172a, #020617);
+            text-align: center;
+            padding: 50px 20px;
+            border-bottom: 2px solid var(--gold);
+        }
+
+        header h1 {
+            color: var(--gold);
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+        }
+
+        /* كارت العقار الغامق */
+        .card {
+            background: var(--deep-navy);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid #1e293b;
+            transition: 0.3s;
+        }
+
+        .card:hover { border-color: var(--gold); }
+
+        .slider-container { width: 100%; height: 250px; position: relative; }
+        .slider-img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        .slider-img.active { display: block; }
+        .slider-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; z-index: 5; }
+        .slider-btn.prev { right: 10px; }
+        .slider-btn.next { left: 10px; }
+
+        .card-body { padding: 20px; }
+        .title { color: var(--gold); font-size: 1.4rem; font-weight: 700; margin-bottom: 10px; }
+        .price { color: #f8fafc; font-weight: 600; font-size: 1.2rem; margin-bottom: 15px; }
+        
+        .btn { display: block; width: 100%; padding: 14px; margin-top: 10px; border-radius: 10px; text-decoration: none; font-weight: 700; text-align: center; transition: 0.3s; }
+        .wa-btn { background: #25D366; color: white; }
+        .call-btn { background: var(--gold); color: #020617; }
+        .btn:hover { opacity: 0.9; transform: scale(1.02); }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>لوحة تواصل الكابتن 🏃‍♂️</h1>
+    <header>
+        <h1>عقارات المتميزة بالجيزة</h1>
+        <p>مع الأستاذ/ عمرو محمد</p>
+    </header>
 
-    <div class="card">
-        <h3>👤 1. اختر المشترك:</h3>
-        <div id="coachClients" style="max-height: 140px; overflow-y: auto;"></div>
+    <div class="container">
+        <main class="grid" id="propertiesGrid">
+            <p style="text-align:center;">جاري تحميل العقارات...</p>
+        </main>
     </div>
 
-    <div class="card">
-        <h3>📱 2. اضغط لتجميع الرسالة والفيديوهات:</h3>
-        <div id="coachMessages" style="max-height: 250px; overflow-y: auto;"></div>
-    </div>
+    <script>
+        const grid = document.getElementById('propertiesGrid');
+        const myPhoneNumber = "01006801079";
+        const firebaseConfig = { databaseURL: "https://cort-6368a-default-rtdb.firebaseio.com" };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
 
-    <div class="card" style="background: #f0fdf4; border: 1px dashed #25D366;">
-        <h3>📝 3. المراجعة والإرسال للواتساب:</h3>
-        <p>المشترك الحالي: <span id="selectedClientName" style="color:blue; font-weight:bold;">لم يتم الاختيار</span></p>
-        
-        <div style="display:flex; gap:5px; margin-bottom:5px;">
-            <input type="text" id="setsCount" placeholder="المجاميع">
-            <input type="text" id="repsCount" placeholder="العدات">
-        </div>
-        <button onclick="generateCustomWorkout()" style="background: #2980b9; color:white; border:none; padding:8px; width:100%; border-radius:4px; font-size:13px; margin-bottom:5px;">إضافة صيغة التوجيهات</button>
+        database.ref('properties').on('value', (snapshot) => {
+            grid.innerHTML = '';
+            if(!snapshot.exists()) { grid.innerHTML = '<p>لا توجد عقارات حالياً.</p>'; return; }
 
-        <textarea id="finalMessage" rows="8" placeholder="الرسالة النهائية تظهر هنا..."></textarea>
-        <button class="send-btn" onclick="sendToWhatsApp()">إرسال لواتساب المشترك 💬</button>
-    </div>
-</div>
+            snapshot.forEach((child) => {
+                const p = child.val();
+                // صياغة الرسالة المطلوبة
+                const msg = encodeURIComponent(`السلام عليكم، تواصل مع الأستاذ عمرو محمد.\nأنا مهتم بمعاينة عقار: ${p.title}\nالسعر: ${p.price}`);
+                
+                let imgs = p.images.map((img, i) => `<img src="${img}" class="slider-img ${i==0?'active':''}">`).join('');
+                let btns = p.images.length > 1 ? `<button class="slider-btn prev" onclick="changeSlide(this, -1)">❯</button><button class="slider-btn next" onclick="changeSlide(this, 1)">❮</button>` : '';
 
-<script>
-    let database;
-    let currentPhone = "";
-    let currentName = "";
-
-    // تم ربط الداتابيز الجديدة هنا بنجاح
-    firebase.initializeApp({ databaseURL: "https://eeyru-878e7-default-rtdb.firebaseio.com/" });
-    database = firebase.database();
-
-    database.ref('clients').on('value', (snapshot) => {
-        let html = '';
-        snapshot.forEach((child) => {
-            html += `<div class="client-box" id="c_${child.val().phone}" onclick="selectClient('${child.val().name}', '${child.val().phone}')">👤 ${child.val().name}</div>`;
+                grid.innerHTML += `
+                    <div class="card">
+                        <div class="slider-container">${imgs}${btns}</div>
+                        <div class="card-body">
+                            <div class="title">${p.title}</div>
+                            <div class="price">${p.price} ج.م</div>
+                            <p>${p.description}</p>
+                            <a href="https://wa.me/2${myPhoneNumber}?text=${msg}" class="btn wa-btn">💬 تواصل مع الأستاذ عمرو محمد (واتس)</a>
+                            <a href="tel:${myPhoneNumber}" class="btn call-btn">📞 اتصال مباشر مع الأستاذ عمرو محمد</a>
+                        </div>
+                    </div>
+                `;
+            });
         });
-        document.getElementById('coachClients').innerHTML = html || 'لا يوجد مشتركين';
-    });
 
-    database.ref('messages').on('value', (snapshot) => {
-        let html = '';
-        snapshot.forEach((child) => {
-            const data = child.val();
-            html += `<button class="msg-btn" onclick="handleButtonClick('${data.category}', '${data.title}', '${data.content}')">🏷️ [${data.category}] ${data.title}</button>`;
-        });
-        document.getElementById('coachMessages').innerHTML = html || 'لا يوجد خانات مضافة';
-    });
-
-    function selectClient(name, phone) {
-        currentName = name; currentPhone = phone;
-        document.getElementById('selectedClientName').innerText = name;
-        document.querySelectorAll('.client-box').forEach(el => el.classList.remove('active'));
-        document.getElementById('c_' + phone).classList.add('active');
-    }
-
-    function handleButtonClick(category, title, content) {
-        let textToAppend = "";
-        if (category === "جروب الأكل") {
-            textToAppend = `🍏 *نظام الأكل [ ${title} ] :*\n${content}`;
-        } else if (category === "جروب تمارين الجيم") {
-            textToAppend = `💪 *تمارين الجيم [ ${title} ] :*\n${content}`;
-        } else if (category === "جروب تمارين البيت") {
-            textToAppend = `🏠 *تمارين البيت [ ${title} ] :*\n${content}`;
-        } else if (category === "جروب ميديا وتوضيح") {
-            textToAppend = `🎬 *شرح فيديو لتمرين ( ${title} ) :*\n🎥 شاهد الفيديو من الرابط: ${content}`;
+        function changeSlide(btn, dir) {
+            const slides = btn.parentElement.querySelectorAll('.slider-img');
+            let idx = Array.from(slides).findIndex(s => s.classList.contains('active'));
+            slides[idx].classList.remove('active');
+            let next = (idx + dir + slides.length) % slides.length;
+            slides[next].classList.add('active');
         }
-        appendToMessage(textToAppend);
-    }
-
-    function generateCustomWorkout() {
-        const sets = document.getElementById('setsCount').value.trim() || "3 مجاميع";
-        const reps = document.getElementById('repsCount').value.trim() || "15 عدة";
-        appendToMessage(`⚙️ *توجيهات التمرين:*\nالمجاميع ${sets} في ${reps}.\n🔹 وركز في الأداء الحركي.`);
-    }
-
-    function appendToMessage(text) {
-        const area = document.getElementById('finalMessage');
-        area.value = area.value === "" ? text : area.value + "\n\n-----------\n\n" + text;
-    }
-
-    function sendToWhatsApp() {
-        let msg = document.getElementById('finalMessage').value;
-        if(!currentPhone || !msg) { alert("اختر المشترك وجهز الرسالة أولاً!"); return; }
-        window.open(`https://api.whatsapp.com/send?phone=${currentPhone}&text=${encodeURIComponent(msg)}`, '_blank');
-    }
-</script>
+    </script>
 </body>
 </html>

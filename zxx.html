@@ -3,199 +3,267 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة الأدمن - الرفع الصاروخي</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <title>لوحة تحكم الأدمن - حماية بكلمة سر</title>
+    <!-- استدعاء مكتبة الفايربيس (نفس النسخة المستقرة في كودك) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #eef2f3; margin: 0; padding: 10px; color: #333; direction: rtl; }
-        .container { max-width: 100%; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); box-sizing: border-box; margin: 10px auto; max-width: 600px; border-top: 5px solid #007bff; }
-        h1, h3 { text-align: center; color: #333; font-size: 20px; margin: 10px 0; }
-        .card { background: #fff; padding: 15px; border: 1px solid #dee2e6; border-radius: 8px; margin-bottom: 15px; box-sizing: border-box; }
-        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
-        button { width: 100%; background: #007bff; color: white; padding: 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; }
-        button:hover { background-color: #0056b3; }
-        .list-item { background: #f8f9fa; padding: 10px; margin: 5px 0; border-right: 4px solid #007bff; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; border: 1px solid #dee2e6; border-right-width: 4px; }
-        .delete-btn { background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; width: auto; cursor: pointer; }
-        .login-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:#343a40; display:flex; justify-content:center; align-items:center; z-index:9999; padding: 15px; box-sizing: border-box; }
-        .login-box { background:white; padding:25px; border-radius:12px; width:100%; max-width:340px; text-align:center; }
-        .progress-bar { background: #e2e8f0; border-radius: 4px; height: 12px; margin: 10px 0; display: none; overflow: hidden; border: 1px solid #cbd5e1; }
-        .progress-fill { background: #28a745; height: 100%; width: 0%; transition: width 0.1s; }
-        .upload-msg { color: #007bff; font-weight: bold; display: none; text-align: center; margin-top: 5px; font-size: 14px; }
+        :root {
+            --navy: #1a2a6c;
+            --gold: #b8860b;
+            --bg: #f8f9fa;
+            --text: #2c3e50;
+        }
+        body { 
+            font-family: 'Cairo', sans-serif; 
+            background-color: var(--bg); 
+            margin: 0; 
+            padding: 20px; 
+            color: var(--text); 
+        }
+        .container { 
+            max-width: 1100px; 
+            margin: auto; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 16px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
+        }
+        h1, h2, h3 { text-align: center; color: var(--navy); }
+        h1 { font-weight: 700; margin-bottom: 10px; }
+        
+        .grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 30px; margin-top: 30px; }
+        .card { 
+            background: #fff; 
+            padding: 25px; 
+            border: 1px solid #eee; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        }
+        
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--navy); }
+        input[type="text"], textarea, input[type="file"] { 
+            width: 100%; 
+            padding: 12px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            box-sizing: border-box; 
+            font-size: 15px; 
+            font-family: 'Cairo', sans-serif;
+            transition: 0.3s;
+        }
+        input[type="text"]:focus, textarea:focus {
+            border-color: var(--gold);
+            outline: none;
+            box-shadow: 0 0 5px rgba(184, 134, 11, 0.2);
+        }
+
+        /* تنسيق قائمة العقارات الحالية */
+        .estate-box { 
+            padding: 15px; 
+            margin: 10px 0; 
+            background: #fdfdfd; 
+            border-right: 5px solid var(--gold); 
+            border-radius: 6px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-delete {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Cairo', sans-serif;
+            font-size: 12px;
+        }
+        .btn-delete:hover { background: #c0392b; }
+
+        .send-btn { 
+            width: 100%; 
+            background: linear-gradient(135deg, var(--navy), #2a3b8c); 
+            color: white; 
+            padding: 15px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 18px; 
+            font-weight: bold; 
+            font-family: 'Cairo', sans-serif;
+            transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(26, 42, 108, 0.2);
+        }
+        .send-btn:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(26, 42, 108, 0.3);
+        }
+        
+        .selected-box { 
+            background: #fbf9f5; 
+            border: 2px dashed var(--gold); 
+        }
+        .status-msg { text-align: center; font-weight: bold; color: #27ae60; margin-top: 10px; display: none;}
+
+        /* شاشة تسجيل الدخول الفخمة */
+        .login-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: var(--navy); display:flex; justify-content:center; align-items:center; z-index:9999; }
+        .login-box { background:white; padding:40px; border-radius:16px; width:340px; text-align:center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border-top: 5px solid var(--gold); }
+        .login-box input { width: 100%; padding: 12px; margin-top: 15px; border: 1px solid #ddd; border-radius: 6px; text-align: center; font-size: 16px; }
+        .login-box button { background: var(--gold); color: white; border: none; padding: 12px; width: 100%; margin-top: 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-family: 'Cairo', sans-serif; font-size: 16px; }
     </style>
 </head>
 <body>
 
+<!-- شاشة قفل الأدمن -->
 <div class="login-overlay" id="loginScreen">
     <div class="login-box">
-        <h2>لوحة الأدمن 👑</h2>
-        <input type="password" id="adminPasswordInput" placeholder="كلمة السر">
-        <button onclick="checkAdminLogin()" style="background:#343a40; margin-top:10px;">دخول 🔐</button>
+        <h2 style="margin:0; color:var(--navy)">لوحة تحكم عقارات الجيزة 🦅</h2>
+        <p style="color:#666; font-size:14px;">برجاء إدخال كلمة السر للدخول وإضافة الشقق</p>
+        <input type="password" id="adminPasswordInput" placeholder="كلمة السر الخاصة بك">
+        <button onclick="checkAdminLogin()">دخول آمن</button>
     </div>
 </div>
 
+<!-- المحتوى الرئيسي المعزول -->
 <div class="container" id="mainContent" style="display: none;">
-    <h1>لوحة تحكم الأدمن والوسائط 👑</h1>
-    
-    <div class="card">
-        <h3>👥 إضافة مشترك جديد</h3>
-        <input type="text" id="clientName" placeholder="اسم المشترك">
-        <input type="text" id="clientPhone" placeholder="رقم الهاتف">
-        <button onclick="addClient()" style="background-color: #28a745;">حفظ المشترك 💾</button>
-        <div id="clientsList" style="margin-top:10px; max-height:150px; overflow-y:auto;"></div>
-    </div>
+    <h1>لوحة إدارة العقارات الذكية 🏢</h1>
+    <p style="text-align:center; color:#7f8c8d; margin:0;">أضف شقق جديدة لتظهر للمستخدمين على الرابط فوراً</p>
+    <hr style="border: 0; height: 1px; background: #eee; margin: 20px 0;">
 
-    <div class="card">
-        <h3>🎬 إضافة الوجبات أو الفيديوهات</h3>
-        <select id="msgCategory" onchange="toggleInputType()">
-            <option value="جروب الأكل">جروب الأكل 🍏 (جدول نصي)</option>
-            <option value="جروب تمارين الجيم">جروب تمارين الجيم 💪 (جدول نصي)</option>
-            <option value="جروب تمارين البيت">جروب تمارين البيت 🏠 (جدول نصي)</option>
-            <option value="جروب ميديا وتوضيح">جروب ميديا وتوضيح 🎬 (فيديو من الاستوديو مباشر)</option>
-        </select>
-        
-        <input type="text" id="btnTitle" placeholder="اسم الزرار (مثال: تجميع بنش)">
-        <textarea id="msgContent" rows="5" placeholder="اكتب تفاصيل الجدول هنا..."></textarea>
-        
-        <div id="mediaUploadBox" style="display: none; border: 2px dashed #007bff; padding: 20px; text-align: center; margin: 10px 0; border-radius: 8px; background: #f8f9fa;">
-            <label style="font-weight: bold; display: block; margin-bottom: 8px;">اختر الفيديو من الموبايل:</label>
-            <input type="file" id="mediaFile" accept="video/*,image/*" style="padding:5px;">
-            <div class="progress-bar" id="progBar"><div class="progress-fill" id="progFill"></div></div>
-            <div id="uploadStatusText" class="upload-msg">⏳ جاري رفع ملف الفيديو إلى السيرفر...</div>
+    <div class="grid">
+        <!-- الخانة اليمنى: إضافة عقار -->
+        <div class="card selected-box">
+            <h3>✨ إضافة عقار جديد للنظام</h3>
+            <form id="estateForm">
+                <div class="form-group">
+                    <label>عنوان العقار (واضح ومختصر):</label>
+                    <input type="text" id="title" placeholder="مثال: شقة 150م في الدقي لقطة" required>
+                </div>
+                <div class="form-group">
+                    <label>السعر الإجمالي (جنيه):</label>
+                    <input type="text" id="price" placeholder="مثال: 3,200,000" required>
+                </div>
+                <div class="form-group">
+                    <label>تفاصيل الشقة بالكامل (الدور، الفيو، التشطيب، التقسيم):</label>
+                    <textarea id="description" rows="5" placeholder="اكتب كل التفاصيل التي يحتاجها الزبون هنا..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>اختر صور العقار من جهازك (من 1 إلى 5 صور):</label>
+                    <input type="file" id="imageFiles" accept="image/*" multiple required>
+                    <small style="color:#888; display:block; margin-top:5px;">يمكنك تحديد عدة صور معاً بالضغط المستمر على زر Ctrl أثناء الاختيار.</small>
+                </div>
+                <button type="submit" class="send-btn">🚀 نشر وتحديث موقع العملاء فوراً</button>
+                <div class="status-msg" id="statusMsg">✅ تم رفع العقار بنجاح وتحديث النظام التلقائي!</div>
+            </form>
         </div>
 
-        <button onclick="addMessage()">حفظ ونشر بموقع الكابتن فوراً 🚀</button>
-        <div id="messagesList" style="margin-top:10px; max-height:200px; overflow-y:auto;"></div>
+        <!-- الخانة اليسرى: التحكم ومسح المباع -->
+        <div class="card">
+            <h3>📋 العقارات المعروضة حالياً بالسيستم</h3>
+            <p style="color:#666; font-size:13px; text-align:center;">الشقة التي يتم حذفها من هنا تختفي فوراً من عند الزوار</p>
+            <div id="currentEstates" style="max-height: 500px; overflow-y: auto; padding: 5px;">جاري تحميل عقاراتك...</div>
+        </div>
     </div>
 </div>
 
 <script>
+    // الحفاظ على كلمة السر التي حددتها أنت في نظامك السابق
     function checkAdminLogin() {
-        if(document.getElementById('adminPasswordInput').value === "000") {
+        const pass = document.getElementById('adminPasswordInput').value;
+        if(pass === "2233") {
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('mainContent').style.display = 'block';
-            initFirebase();
-        } else { alert("كلمة السر خاطئة!"); }
+            initFirebaseConnection();
+        } else {
+            alert("كلمة السر خاطئة! حاول مجدداً.");
+        }
     }
 
     let database;
-    function initFirebase() {
-        firebase.initializeApp({ databaseURL: "https://eeyru-878e7-default-rtdb.firebaseio.com/" });
+
+    function initFirebaseConnection() {
+        // الاتصال بقاعدة بيانات الفايربيس الخاصة بك المأخوذة من كودك الأصلي
+        const firebaseConfig = { databaseURL: "https://cort-6368a-default-rtdb.firebaseio.com" };
+        firebase.initializeApp(firebaseConfig);
         database = firebase.database();
 
-        database.ref('clients').on('value', (snapshot) => {
+        // الاستماع المستمر وجلب العقارات المعروضة لمراقبتها وحذفها
+        database.ref('properties').on('value', (snapshot) => {
             let html = '';
-            snapshot.forEach((child) => {
-                html += `<div class="list-item"><span>👤 ${child.val().name}</span><button class="delete-btn" onclick="deleteClient('${child.key}')">حذف</button></div>`;
+            snapshot.forEach((childSnapshot) => {
+                const data = childSnapshot.val();
+                const key = childSnapshot.key;
+                html += `
+                    <div class="estate-box">
+                        <div>
+                            <strong style="color:var(--navy);">${data.title}</strong>
+                            <div style="font-size:13px; color:#e74c3c;">${data.price} ج.م</div>
+                        </div>
+                        <button class="btn-delete" onclick="deleteProperty('${key}')">حذف 🗑️</button>
+                    </div>
+                `;
             });
-            document.getElementById('clientsList').innerHTML = html || 'لا يوجد مشتركين حالياً';
-        });
-
-        database.ref('messages').on('value', (snapshot) => {
-            let html = '';
-            snapshot.forEach((child) => {
-                html += `<div class="list-item"><span><strong>[${child.val().category}]</strong> ${child.val().title}</span><button class="delete-btn" onclick="deleteMessage('${child.key}')">حذف</button></div>`;
-            });
-            document.getElementById('messagesList').innerHTML = html || 'لا يوجد خانات مضافة';
+            document.getElementById('currentEstates').innerHTML = html || 'لا توجد عقارات معروضة بالسيستم حالياً.';
         });
     }
 
-    function toggleInputType() {
-        const cat = document.getElementById('msgCategory').value;
-        if(cat === "جروب ميديا وتوضيح") {
-            document.getElementById('mediaUploadBox').style.display = "block";
-            document.getElementById('msgContent').style.display = "none";
-        } else {
-            document.getElementById('mediaUploadBox').style.display = "none";
-            document.getElementById('msgContent').style.display = "block";
-        }
-    }
-
-    // سيرفر رفع خارجي صاروخي متوافق مع CORS ومفتوح تماماً للموبايل
-    async function uploadFileDirectly(file, onProgress) {
-        return new Promise((resolve, reject) => {
-            const formData = new FormData();
-            formData.append('file', file);
-
-            const xhr = new XMLHttpRequest();
-            // استخدام سيرفر tmpfiles المفتوح لرفع أي حجم بدون قيود أمان
-            xhr.open('POST', "https://tmpfiles.org/api/v1/upload", true);
-
-            xhr.upload.onprogress = (event) => {
-                if (event.lengthComputable) {
-                    const percent = (event.loaded / event.total) * 100;
-                    onProgress(percent);
-                }
-            };
-
-            xhr.onload = () => {
-                if (xhr.status === 200) {
-                    const res = JSON.parse(xhr.responseText);
-                    // تحويل الرابط لرابط مباشر صالح للمشاهدة فوراً
-                    let directUrl = res.data.url.replace("tmpfiles.org/", "tmpfiles.org/dl/");
-                    resolve(directUrl);
-                } else { reject('فشل الرفع'); }
-            };
-            xhr.onerror = () => reject('خطأ اتصال');
-            xhr.send(formData);
-        });
-    }
-
-    async function addMessage() {
-        const category = document.getElementById('msgCategory').value;
-        const title = document.getElementById('btnTitle').value.trim();
+    // معالجة رفع الفورم وتحويل الصور لـ Base64
+    document.getElementById('estateForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
         
-        if(!title) { alert("برجاء كتابة اسم الزرار أولاً!"); return; }
+        const title = document.getElementById('title').value;
+        const price = document.getElementById('price').value;
+        const description = document.getElementById('description').value;
+        const fileInput = document.getElementById('imageFiles');
 
-        if(category === "جروب ميديا وتوضيح") {
-            const file = document.getElementById('mediaFile').files[0];
-            if(!file) { alert("برجاء اختيار الفيديو من الاستوديو!"); return; }
-            
-            document.getElementById('progBar').style.display = "block";
-            document.getElementById('uploadStatusText').style.display = "block";
+        if(fileInput.files.length > 5) {
+            alert("أقصى عدد مسموح به هو 5 صور فقط للشقة الواحدة!");
+            return;
+        }
 
-            try {
-                const videoUrl = await uploadFileDirectly(file, (percent) => {
-                    document.getElementById('progFill').style.width = percent + '%';
-                });
-                
-                database.ref('messages').push({ category: category, title: title, content: videoUrl });
-                resetForm();
-                alert("تم رفع الفيديو بنجاح وظهر عند الكابتن كـ زرار! 🎉");
-            } catch (err) {
-                alert("فشل الرفع، تأكد من حجم الملف والشبكة وجرب تاني.");
-                document.getElementById('progBar').style.display = "none";
-                document.getElementById('uploadStatusText').style.display = "none";
-            }
-        } else {
-            const content = document.getElementById('msgContent').value.trim();
-            if(!content) { alert("اكتب تفاصيل الجدول أولاً!"); return; }
-            database.ref('messages').push({ category: category, title: title, content: content });
-            resetForm();
-            alert("تم حفظ الجدول بنجاح ونشر بموقع الكابتن!");
+        // تحويل مصفوفة الصور بالكامل لنصوص مشفرة لحفظها في الـ Realtime Database
+        const base64Images = [];
+        for(let i=0; i < fileInput.files.length; i++) {
+            const str = await convertFileToBase64(fileInput.files[i]);
+            base64Images.push(str);
+        }
+
+        // دفع البيانات للفايربيس
+        database.ref('properties').push({
+            title: title,
+            price: price,
+            description: description,
+            images: base64Images,
+            timestamp: Date.now()
+        }).then(() => {
+            document.getElementById('estateForm').reset();
+            const msg = document.getElementById('statusMsg');
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; }, 4000);
+        }).catch((err) => {
+            alert("حدث خطأ أثناء الرفع: " + err.message);
+        });
+    });
+
+    function convertFileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    }
+
+    function deleteProperty(key) {
+        if(confirm("هل أنت متأكد من حذف هذا العقار بشكل نهائي؟")) {
+            database.ref('properties').child(key).remove();
         }
     }
-
-    function resetForm() {
-        document.getElementById('btnTitle').value = '';
-        document.getElementById('msgContent').value = '';
-        document.getElementById('mediaFile').value = '';
-        document.getElementById('progBar').style.display = "none";
-        document.getElementById('progFill').style.width = '0%';
-        document.getElementById('uploadStatusText').style.display = "none";
-    }
-
-    function addClient() {
-        const name = document.getElementById('clientName').value.trim();
-        let phone = document.getElementById('clientPhone').value.trim();
-        if(name && phone) {
-            if(phone.startsWith('0')) phone = '2' + phone;
-            database.ref('clients').push({ name: name, phone: phone });
-            document.getElementById('clientName').value = ''; document.getElementById('clientPhone').value = '';
-            alert("تم حفظ المشترك الجديد!");
-        }
-    }
-    function deleteClient(id) { if(confirm("هل تريد حذف هذا المشترك؟")) database.ref('clients/' + id).remove(); }
-    function deleteMessage(id) { if(confirm("هل تريد حذف هذه الخانة؟")) database.ref('messages/' + id).remove(); }
 </script>
 </body>
 </html>
